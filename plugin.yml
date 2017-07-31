@@ -1,0 +1,7 @@
+name: EggTagger
+main: net.libercraft.eggtagger.EggTagger
+version: 1.0
+commands:
+  egg:
+    description: Generate a new tagged dragon egg.
+    usage: /egg
