@@ -2,25 +2,38 @@ package net.libercraft.eggtagger;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
-import org.bukkit.Material;
-import org.bukkit.block.Block;
 import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 
-public class EggTagger extends JavaPlugin implements Tracer {
+public class EggTagger extends JavaPlugin {
 
 	File datafile;
 	Database data;
+	List<EggTag> eggtags;
 	
 	@Override
 	public void onEnable() {
 		createDatabase();
 		this.getCommand("egg").setExecutor(new CommandEgg(this));
 		this.getServer().getPluginManager().registerEvents(new EggListener(this), this);
-		resetEggMetadata();
+		eggtags = loadEggtags();
+		
+		new BukkitRunnable() {
+
+			@Override
+			public void run() {
+				for (EggTag eggtag:eggtags) {
+					if (eggtag.updateTag()) {
+						data.updateEntry(eggtags.indexOf(eggtag), eggtag);
+					}
+				}
+			}
+			
+		}.runTaskTimer(this, 0, 1);
 	}
 	
 	@Override
@@ -48,24 +61,27 @@ public class EggTagger extends JavaPlugin implements Tracer {
 		}
 	}
 	
-	public Database getData() {
-		return data;
+	private List<EggTag> loadEggtags() {
+		
+		List<EggTag> list = new ArrayList<EggTag>();
+		for (int i = 0; i < data.getLength(); i++) {
+			EggTag entry = data.getEntry(i);
+			if (entry == null) continue; 
+			list.add(entry);
+		}
+		return list;
 	}
 	
-	public void resetEggMetadata() {
-		
-		// Retrieve all the stored eggs
-		List<EggTag> list = data.getEntries();
-		for (EggTag entry:list) {
-			
-			// Store the index of this entry
-			int i = list.indexOf(entry);
-			Block block = entry.getLocation().getBlock();
-			
-			// Make sure the block is a dragon egg, and then restore the metadata
-			if (block.getType().equals(Material.DRAGON_EGG)) {
-				block.setMetadata(data.getString(i + ".name"), new FixedMetadataValue(this, data.getString(i + ".name")));
-			}
-		}
+	public List<EggTag> getEggtags() {
+		return eggtags;
+	}
+	
+	public void registerEggTag(EggTag eggtag) {
+		eggtags.add(eggtag);
+		data.updateEntry(eggtags.indexOf(eggtag), eggtag);
+	}
+	
+	public Database getData() {
+		return data;
 	}
 }

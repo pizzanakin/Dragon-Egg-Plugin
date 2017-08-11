@@ -1,4 +1,4 @@
-name: EggTagger
+name: EggTracker
 main: net.libercraft.eggtagger.EggTagger
 version: 1.0
 commands:
